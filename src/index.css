@@ -1,0 +1,426 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --agl-red:   #DC2626;
+  --agl-red-2: #B91C1C;
+  --agl-black: #000000;
+  /* WS1-C: canonical surface tokens. EVERY page background / card body
+     must resolve to one of these. No off-white "cream" tones — that
+     was the source of the dual-theme defect prior to the 2026-05
+     unification sweep. */
+  --bg-primary:   #FFFFFF;   /* card body / surface */
+  --bg-canvas:    #FAFAFA;   /* app shell / inputs */
+  --bg-muted:     #F5F5F5;   /* hover / disabled */
+  --bg-ink:       #000000;   /* hero / dark CTAs */
+  /* P28 — second density pass. Operators reported "ON HAN", "REORD",
+     "UNIT COS" still being clipped on 13" laptops; the right answer is
+     a smaller base scale combined with cell-level ellipsis (see .t-th
+     / .t-td below) so any column that runs out of room degrades to a
+     truncated label with a hover-title rather than a torn-off word. */
+  --agl-text-base: 12.5px;
+  --agl-text-sm:   11.5px;
+  --agl-text-xs:   10.5px;
+  --agl-table-cell-y: 4px;
+  --agl-table-cell-x: 10px;
+  /* Sticky offset for sub-page sticky elements (table headers inside their
+     own scroll containers, anchor strips). Mirrors the 56px fixed TopBar. */
+  --agl-topbar-h: 56px;
+}
+
+html, body, #root { height: 100%; }
+html, body { overflow-x: clip; }
+body {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #FAFAFA;
+  color: #212121;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-size: var(--agl-text-base);
+  line-height: 1.55;             /* was 1.45 — opens vertical breathing */
+  letter-spacing: -0.005em;
+}
+/* Headings — single source of weight + tracking so nothing fights it.
+   Pinned at 19.5 / 16.5 / 14.5 px (+1.5 from the prior 18/15/13 pass) for
+   readability inside cards while staying tight enough not to dominate.
+   Pinned in px (not rem) so they don't drift if html root ever changes. */
+h1, h2, h3, h4 { letter-spacing: -0.015em; }
+h1 { font-size: 19.5px; line-height: 1.2;  font-weight: 600; }
+h2 { font-size: 16.5px; line-height: 1.3;  font-weight: 600; }
+h3 { font-size: 14.5px; line-height: 1.4;  font-weight: 600; }
+p  { line-height: 1.5; }
+small, .text-2xs { line-height: 1.35; }
+
+/* ─────────────────────────────  Animations  ─────────────────────────────── */
+@keyframes agl-fade-in-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes agl-fade-in    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes agl-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(220,38,38,0.35); } 70% { box-shadow: 0 0 0 12px rgba(220,38,38,0); } 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); } }
+@keyframes agl-shimmer    { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes agl-rise       { from { opacity: 0; transform: translateY(10px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes agl-spin-slow  { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes agl-count-up   { from { transform: translateY(0.35em); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ─── Always-visible horizontal scrollbar for data tables.
+   `overflow-x: auto` hides the scrollbar on macOS / trackpads until
+   the user starts scrolling — which means they don't know horizontal
+   scroll exists. .agl-scroll-x forces it visible. */
+.agl-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.20) transparent;
+}
+.agl-scroll-x::-webkit-scrollbar { height: 10px; }
+.agl-scroll-x::-webkit-scrollbar-track { background: rgba(0,0,0,0.03); border-radius: 8px; }
+.agl-scroll-x::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.20);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.agl-scroll-x::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); background-clip: content-box; }
+
+/* Filmic noise texture for the dark hero — pure SVG, no asset request. */
+.agl-noise {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.8 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ─── Welcome / Login cinematic motion ──────────────────────────────────
+   Shared easing: cubic-bezier(0.22, 1, 0.36, 1) for entrances.
+   Sedan parallax reads from --agl-hero-scroll (set by Hero useEffect). */
+
+@keyframes agl-word-rise   { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes agl-sedan-in    { 0% { opacity: 0; transform: translateX(120px) rotate(-3deg); } 100% { opacity: 1; transform: translateX(0) rotate(-3deg); } }
+@keyframes agl-sedan-float { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(-3deg); } }
+@keyframes agl-glow-pulse  { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+/* Inline-placed login sedan — centered between text blocks, no rotation. */
+@keyframes agl-sedan-mount  { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes agl-sedan-floatL { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+.agl-word { opacity: 0; animation: agl-word-rise 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+.agl-hero-sedan {
+  animation: agl-sedan-in 1600ms cubic-bezier(0.22, 1, 0.36, 1) 400ms both,
+             agl-sedan-float 6s ease-in-out 2000ms infinite;
+  /* Scroll parallax — translateY scales with --agl-hero-scroll (px). */
+  transform: translateY(calc(var(--agl-hero-scroll, 0) * -0.10px)) rotate(-3deg);
+  will-change: transform, opacity;
+}
+.agl-hero-glow { animation: agl-glow-pulse 8s ease-in-out infinite; }
+
+/* Login panel sedan — different choreography (left dark panel, bigger). */
+.agl-login-sedan {
+  animation: agl-sedan-mount 1200ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both,
+             agl-sedan-floatL 6s ease-in-out 1600ms infinite;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agl-word { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .agl-hero-sedan, .agl-login-sedan { animation: none !important; }
+  .agl-hero-glow { animation: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition-duration: 0.001ms !important; }
+}
+
+/* AGL logo watermark — quiet ambient brand presence behind <main>. Painted
+   via ::before so screen readers ignore it (decorative). Kept calm enough to
+   not affect text contrast.
+
+   The dot grid covers the canvas; the AGL crest sits dead-centre of the
+   viewport region not occupied by the sidebar + topbar + footer. */
+.app-shell main { position: relative; }
+.app-shell main::before,
+.app-shell main::after {
+  content: '';
+  position: fixed;
+  inset: 72px 0 36px 260px;
+  z-index: 0;
+  pointer-events: none;
+}
+/* Layer 1 — repeating dot pattern. */
+main::before {
+  background-image: radial-gradient(circle at 1px 1px, rgba(204,14,26,0.04) 1px, transparent 0);
+  background-size: 28px 28px;
+  background-repeat: repeat;
+  opacity: 0.6;
+}
+/* Layer 2 — centred AGL crest. Sized fluidly with the smaller of viewport
+   width/height so it always feels balanced regardless of zoom. */
+main::after {
+  background-image: url('/agl-logo.jpeg');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: min(420px, 38vmin);
+  opacity: 0.12;
+  filter: grayscale(1) contrast(1.05);
+  mix-blend-mode: multiply;
+}
+main > * { position: relative; z-index: 1; }
+
+@media (max-width: 768px) {
+  main::before,
+  main::after { inset: 72px 0 36px 0; }
+  main::after  { opacity: 0.08; background-size: min(280px, 50vmin); }
+}
+/* When the user has the sidebar collapsed, the centred logo recomputes. */
+body.sidebar-collapsed main::before,
+body.sidebar-collapsed main::after { inset: 72px 0 36px 60px; }
+
+@layer components {
+  /* ── Buttons — three sizes, all driven by `.btn-*` modifiers. ─────────── */
+  .btn            { @apply inline-flex items-center justify-center gap-1.5 font-semibold transition-all duration-200 rounded-control select-none whitespace-nowrap; }
+  /* Default 32px tall (was 36px). Text drops to xs to match the smaller scale. */
+  .btn-primary    { @apply btn bg-brand-500 hover:bg-brand-600 text-white h-control-sm px-3   text-xs shadow-card; }
+  .btn-dark       { @apply btn bg-black     hover:bg-neutral-900 text-white h-control-sm px-3 text-xs shadow-card; }
+  .btn-outline    { @apply btn bg-white     hover:bg-canvas      text-black border border-edge h-control-sm px-3 text-xs; }
+  .btn-ghost      { @apply btn bg-white/10  hover:bg-white/20    text-white border border-white/20 h-control-sm px-3 text-xs; }
+  .btn-primary-lg { @apply btn bg-brand-500 hover:bg-brand-600   text-white h-control px-5 text-sm shadow-pop; }
+  /* Size modifiers — apply ALONGSIDE the colour modifier above. */
+  .btn-sm         { @apply h-control-xs px-2.5 text-2xs; }
+  .btn-xs         { @apply h-control-xs px-2 text-2xs; }
+  .btn-chip       { @apply btn bg-brand-50 hover:bg-brand-100 text-brand-600 h-control-xs px-2.5 text-2xs rounded-full; }
+
+  /* ── Cards — three padding levels, two elevations. ────────────────────── */
+  .card-base      { @apply bg-white border border-line rounded-card; }
+  .card-feature   { @apply card-base p-4 shadow-card transition-all duration-300; }
+  .card-feature:hover { @apply -translate-y-0.5 shadow-pop; }
+  .card-soft      { @apply bg-muted border border-edge rounded-card p-4; }
+  .card-ink       { @apply bg-black text-white rounded-card p-4 shadow-pop; }
+  .card-tight     { @apply card-base p-3; }
+
+  /* ── Tiles & chips ───────────────────────────────────────────────────── */
+  .tile           { @apply w-10 h-10 rounded-control flex items-center justify-center transition-transform duration-300 group-hover:scale-110; }
+  .tile-red       { @apply tile bg-brand-500 text-white; }
+  .tile-ink       { @apply tile bg-black     text-white; }
+  .tile-soft      { @apply w-9 h-9 rounded-control bg-brand-50 text-brand-600 flex items-center justify-center; }
+  .chip           { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold; }
+  .chip-red       { @apply chip bg-brand-50  text-brand-600; }
+  .chip-ink       { @apply chip bg-neutral-900 text-white; }
+  .chip-mute      { @apply chip bg-canvas    text-neutral-600 border border-edge; }
+
+  /* ── Form inputs — one height, one radius. ───────────────────────────── */
+  .field-input    { @apply w-full bg-white border border-line rounded-control h-control-sm px-2.5 text-[12.5px] text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/50 disabled:bg-canvas disabled:cursor-not-allowed; }
+  .field-error    { @apply text-2xs text-brand-500 mt-1; }
+
+  /* KPI numbers — shrink and wrap-safe so long GHS values never blow out
+     the card width. Use 'min-w-0' on the parent flex/grid item. */
+  .kpi-value      { @apply text-sm md:text-base font-extrabold tracking-tight leading-none break-words; word-break: break-word; overflow-wrap: anywhere; }
+  .kpi-label      { @apply text-[9.5px] font-bold tracking-[0.14em] text-neutral-500 uppercase truncate; }
+  .num-tabular    { font-variant-numeric: tabular-nums; white-space: nowrap; font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .num            { font-variant-numeric: tabular-nums; font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* Tables — compact, dense, *gracefully* truncating.
+     Cells get padding px-2.5 (10px) and a strict overflow:hidden +
+     text-overflow:ellipsis so a column that runs out of room degrades
+     to a "Reord…" label rather than amputating the word with no signal.
+     Pair with `title={value}` on the rendered cell so the full value
+     is available on hover. Letter-spacing kept tight so the uppercase
+     headers don't visually swell beyond their content.
+
+     Sticky behaviour: headers stick to the nearest scrollable ancestor.
+     Wrap the table in `.agl-table-card` to opt in. `position: sticky`
+     needs an opaque background — the explicit hex sidesteps any
+     utility-purge regressions on `bg-canvas`. */
+  .t-th           {
+    @apply text-left font-semibold uppercase text-neutral-500 px-2 py-1 bg-canvas border-b border-line;
+    font-size: 8.5px;
+    letter-spacing: 0.04em;
+    line-height: 1.25;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #FAFAFA;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .t-td           {
+    @apply px-2 py-1 text-body border-b border-line;
+    font-size: 10.5px;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .t-td.num,
+  .t-td .num,
+  td.num,
+  td .num,
+  .num-tabular    { white-space: nowrap; }
+  /* Currency cells — always single line. Append `money` class for emphasis. */
+  .money          { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: -0.01em; }
+
+  /* Table card — scrollable container that makes sticky headers work.
+     Used as the table wrapper in InventoryPage, SalesPage, etc. The
+     max-height is generous enough that short tables don't scroll while
+     long ledgers stay on a single viewport without the page itself
+     scrolling. Horizontal scroll is enabled too (forced-visible bar via
+     .agl-scroll-x is used separately for x-only wrappers). */
+  .agl-table-card {
+    max-height: calc(100vh - 280px);
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.20) transparent;
+  }
+  .agl-table-card::-webkit-scrollbar         { width: 10px; height: 10px; }
+  .agl-table-card::-webkit-scrollbar-track   { background: rgba(0,0,0,0.03); }
+  .agl-table-card::-webkit-scrollbar-thumb   { background: rgba(0,0,0,0.20); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+  .agl-table-card::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); background-clip: content-box; }
+
+  .eyebrow        { @apply text-[9.5px] font-bold uppercase tracking-[0.16em] text-brand-600; }
+  .h-display      { @apply text-[clamp(1.25rem,2.4vw,1.875rem)] font-bold leading-[1.05] tracking-tight text-black; }
+  .h-section      { @apply text-sm md:text-base font-bold tracking-tight text-black; }
+  .blob           { @apply absolute rounded-full blur-3xl pointer-events-none; }
+
+  /* Animated helpers callable from any component. */
+  .anim-fade-up   { animation: agl-fade-in-up 360ms cubic-bezier(.22,.61,.36,1) both; }
+  .anim-fade      { animation: agl-fade-in 240ms ease-out both; }
+  .anim-rise      { animation: agl-rise 420ms cubic-bezier(.22,.61,.36,1) both; }
+  .anim-pulse-dot { animation: agl-pulse-ring 1.8s infinite; }
+  .anim-spin-slow { animation: agl-spin-slow 14s linear infinite; }
+  .skeleton       {
+    background: linear-gradient(90deg, rgba(0,0,0,0.04), rgba(0,0,0,0.10), rgba(0,0,0,0.04));
+    background-size: 200% 100%;
+    animation: agl-shimmer 1.4s linear infinite;
+    border-radius: 8px;
+  }
+
+  /* Card hover refinement — used on dashboard tiles & quick-action cards. */
+  .lift-on-hover  {
+    transition: transform 220ms cubic-bezier(.22,.61,.36,1), box-shadow 220ms;
+  }
+  .lift-on-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 30px -16px rgba(0,0,0,0.18), 0 4px 8px -4px rgba(0,0,0,0.08);
+  }
+}
+
+/* Default font sizes for un-classed elements. Heading sizes are also set at
+   the top of this file (with line-height + tracking); this duplicate block
+   is kept only for safety, Tailwind utilities still win. */
+p, span, li, td, th, label, input, select, textarea, button { font-size: inherit; }
+
+/* ─────────────────────────  AGL density override  ────────────────────────
+   Tailwind ships its `text-*` utilities in rem (text-base = 1rem = 16px,
+   text-xl = 1.25rem = 20px, etc). Those sizes are way too loud for AGL Ops
+   — cards and table cells get blown out by stray headings. We override the
+   named scale to px values so type shrinks to fit inside the existing
+   borders, padding, and column widths *without* compressing the layout
+   (heights, gaps, padding all stay rem-based and unchanged).
+   Specificity is matched (class selector + !important on raw px) so these
+   beat the utilities generated by Tailwind at build time. */
+.text-xs   { font-size: 10.5px !important; line-height: 1.4; }
+.text-sm   { font-size: 11.5px !important; line-height: 1.45; }
+.text-base { font-size: 12.5px !important; line-height: 1.5; }
+.text-lg   { font-size: 13.5px !important; line-height: 1.4; }
+.text-xl   { font-size: 14.5px !important; line-height: 1.35; }
+.text-2xl  { font-size: 16.5px !important; line-height: 1.3; }
+.text-3xl  { font-size: 19.5px !important; line-height: 1.25; }
+.text-4xl  { font-size: 23.5px !important; line-height: 1.2; }
+.text-5xl  { font-size: 27.5px !important; line-height: 1.15; }
+.text-6xl  { font-size: 31.5px !important; line-height: 1.1; }
+
+/* Global money-nowrap heuristic: any cell whose content begins with "GHS "
+   never wraps. Pure CSS, no markup change. */
+td:has(> :only-child),
+td {
+  /* fallback — applied via class is preferred */
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body {
+    margin: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print,
+  .no-print * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .app-shell {
+    display: block !important;
+    min-height: 0 !important;
+    background: #fff !important;
+  }
+
+  .app-shell > header,
+  .app-shell > footer,
+  .app-shell > [aria-hidden='true'],
+  .app-shell aside {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .app-shell > div,
+  .app-shell main {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  main::before,
+  main::after,
+  .app-shell main::before,
+  .app-shell main::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  .print-root {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 12mm !important;
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  .print-root[data-print-orientation='portrait'] {
+    width: 210mm !important;
+    min-height: 297mm !important;
+  }
+
+  .print-root[data-print-orientation='landscape'] {
+    width: 297mm !important;
+    min-height: 210mm !important;
+  }
+
+  .print-root table {
+    page-break-inside: auto;
+  }
+
+  .print-root tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+}

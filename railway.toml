@@ -1,0 +1,21 @@
+# Railway deployment config for AGL OPS.
+# Build: vite produces the static client bundle in dist/.
+# Start: tsx runs the Express + tRPC server which serves dist/ in prod.
+
+[build]
+builder = "RAILPACK"
+buildCommand = "npm run build"
+
+[deploy]
+# The start chain runs migrations + admin reset before booting the
+# server (see package.json::scripts.start). Both are idempotent.
+startCommand = "npm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Health check endpoint — Railway pings this to confirm the deploy is healthy.
+# The Express server returns the SPA shell on `/` so a 200 confirms boot.
+# Generous timeout: the start chain may apply pending migrations before
+# Express comes up, which on a cold database can take ≈30-60s.
+healthcheckPath = "/"
+healthcheckTimeout = 300

@@ -1,0 +1,28 @@
+# Keep the Railway upload tight — exclude everything the builder
+# doesn't need so deploys stay fast.
+node_modules
+dist
+.git
+.github
+.vscode
+.idea
+*.log
+.env
+.env.local
+.env.*.local
+logins
+uploads
+scripts/*.mjs
+!scripts/reset-admin-password.mjs
+!scripts/apply-migration.mjs
+!scripts/apply-all-migrations.mjs
+!scripts/boot.mjs
+!scripts/list-tables.mjs
+*.xlsx
+*.xlsm
+*.csv
+todo.md
+worklog.md
+AGL_Product_List_1.xlsx
+old-salespage.tsx
+patches

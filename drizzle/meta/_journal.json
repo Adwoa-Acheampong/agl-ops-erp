@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1775315130975,
+      "tag": "0000_lethal_vargas",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1775315562889,
+      "tag": "0001_last_mathemanic",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1776685208954,
+      "tag": "0002_clean_dreadnoughts",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1779000000000,
+      "tag": "0003_staff_compliance_fields",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+```
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+target/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+*.env.*
+!.env.example
+
+# Local/generated operational data
+tmp/
+logins/
+.playwright-cli/
+.claude/
+*.zip
+*.xlsx
+*.xls
+*.csv
+*.pdf
+staff portal qr code.png
+
+# Legacy/static export kept locally, not part of the source app
+AGL APP/
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+.env
+```
